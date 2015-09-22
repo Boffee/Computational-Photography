@@ -1,59 +1,75 @@
 clear all;
 
-im = im2single(imread('littleme.jpg'));
+SHARPEN = 1; % sharpen edge
+COLOR_BAL = 0; % color balance 
+
+im = im2single(imread('path.jpg'));
 figure(1), imshow(im), title('original');
+histshow(im);
+
+% gamma correction
+im2 = im.^1.1;
+figure(2), imshow(im2), title('gamma correction');
+histshow(im2);
 
 % histogram equalization
-[hue, sat, val] = rgb2hsv(im);
+[hue, sat, val] = rgb2hsv(im2);
 h = hist(val(:), 0:1/255:1);
 c = cumsum(h);
 val2 = c(uint8(val*255)+1)/numel(val);
-alpha = .9;
+alpha = 0;
 im2 = hsv2rgb(hue, sat, alpha*val+(1-alpha)*val2);
+figure(3), imshow(im2), title('gamma correction and histogram equilization');
+histshow(im2);
 
-% gamma correction
-im2 = im2.^1.2;
-figure(2), imshow(im2), title('increased contrast');
+if SHARPEN
+    sigma = 2;
+    hs = ceil(3*sigma);
+    gauss = fspecial('gaussian', 2*hs+1, sigma);
+    log = fspecial('log', 2*hs+1, sigma);
 
-sigma = 2;
-hs = ceil(3*sigma);
-gauss = fspecial('gaussian', 2*hs+1, sigma);
-log = fspecial('log', 2*hs+1, sigma);
+    im3 = im2;
+    mv = mean(im3(:));
 
-im3 = im2;
-mv = mean(im3(:));
+    for c = 1:3
+        im_c = im3(:,:,c);
 
-for c = 1:3
-    im_c = im3(:,:,c);
-    
-    % color balancing
-%     im_c = im_c * mv/mean(im_c(:));
-% 
-    if c < 3
-        im_c = im_c * sqrt(mv/mean(im_c(:)));
-    else
-        im_c = im_c * nthroot(mv/mean(im_c(:)),4);
+        % color balancing
+        if COLOR_BAL
+            im_c = im_c * mv/mean(im_c(:));
+        end
+
+    %     if c < 3
+    %         im_c = im_c * sqrt(mv/mean(im_c(:)));
+    %     else
+    %         im_c = im_c * nthroot(mv/mean(im_c(:)),5);
+    %     end
+
+        % image sharpening by adding 1-gaussian to original image
+        im_padded = padarray(im_c, [hs hs], 'replicate', 'both');
+        im_blur = conv2(im_padded, gauss, 'valid');
+        im_log = conv2(im_blur, log, 'same');
+        im_sharp = im_c + im_log; %(3*im_c-im_blur)/2;
+        im3(:,:,c) = im_sharp;
     end
-    
-    % image sharpening by adding 1-gaussian to original image
-    im_padded = padarray(im_c, [hs hs], 'replicate', 'both');
-    im_blur = conv2(im_padded, gauss, 'valid');
-    im_log = conv2(im_blur, log, 'same');
-    im_sharp = (3*im_c-im_blur)/2;
-    im3(:,:,c) = im_sharp;
+    figure(3), imshow(im3), title('sharpen and color balance');
+else
+    im3 = im2;
 end
 
-
-figure(3), imshow(im3), title('sharpen and color balance');
-
-
-histshow(im3);
     
 % increase saturation
 [hue, sat, val] = rgb2hsv(uint8(im3*255));
-im4 = hsv2rgb(hue, sat.^.85, val);
+im4 = hsv2rgb(hue, sat.^.8, val);
 figure(4), imshow(im4), title('increased saturation');
 
+% figure(3)
+% [x, y] = ginput(8);
+% [hue, sat, val] = rgb2hsv(uint8(im3*255));
+% mask = poly2mask(x, y, size(val,1), size(val, 2));
+% mask2 = imfilter(im2double(mask), fspecial('gaussian', 151, 25));
+% im4 = hsv2rgb(hue, (1-mask2).*sat + mask2.*(sat.^0.7), val2*0.5+val*0.5);
+% figure(4), imshow(im4);
 
 % color shift
 lab = rgb2lab(im4);
