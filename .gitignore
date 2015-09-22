@@ -1,5 +1,5 @@
 */results
-*.txt
-*.jpg
+**/*.txt
+**/*.jpg
 demos
 
