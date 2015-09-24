@@ -1,0 +1,35 @@
+function quilt = quilt_random(sample, outsize, patchsize)
+% randomly generate a quilt of size OUTSIZE by sampling patches of
+% PATHSIZE from SAMPLE and concatenating the sample patches without overlap
+
+% size of output
+ho = uint32(outsize(1));
+wo = uint32(outsize(2));
+
+% size of patch
+hp = uint32(patchsize(1));
+wp = uint32(patchsize(2));
+
+% size of sample
+[hs, ws, bs] = size(sample);
+
+% initialize quilt with zeros
+quilt = uint8(zeros(ho, wo, 3));
+
+total_patches = ho/hp*wo/wp; % number of patch samples needed
+
+% randomly generate the top left corner x and y of the sample patches
+x_samples = randi([0 hs-hp], [1 total_patches]); 
+y_samples = randi([0 ws-wp], [1 total_patches]);
+
+% assign the sample patches to the quilt with the corresponding top left
+% corner
+for i = 1:ho/hp
+    for j = 1:wo/wp
+        ys = y_samples((i-1)*ho/hp+j);
+        xs = x_samples((i-1)*ho/hp+j);
+        quilt((i-1)*hp+(1:hp),(j-1)*wp+(1:wp),:) = sample(ys+(1:hp),xs+(1:wp),:);
+    end
+end
+
+imagesc(quilt);

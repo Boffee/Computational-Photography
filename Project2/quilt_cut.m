@@ -1,0 +1,1 @@
+function quilt = quilt_cut(sample, outsize, patchsize, overlap, k)
